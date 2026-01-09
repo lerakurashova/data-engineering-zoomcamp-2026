@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from sys import prefix
+import click
 import pandas as pd
 from sqlalchemy import create_engine
 from tqdm.auto import tqdm
@@ -30,21 +30,19 @@ parse_dates = [
     "tpep_dropoff_datetime"
 ]
 
-def run():
-    pg_user = 'root'
-    pg_password = 'root'
-    pg_host = 'localhost'
-    pg_port = 5432
-    pg_database = 'ny_taxi'
+def run(
+    pg_user: str,
+    pg_password: str,
+    pg_host: str,
+    pg_port: int,
+    pg_database: str,
+    year: int,
+    month: int,
+    chunksize: int,
+    target_table: str,
+):
 
-    year = 2021
-    month = 1
-    
-    chunksize = 100000
-    
-    target_table = 'yellow_taxi_data'
-
-    prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/'
+    prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow'
     url = f'{prefix}/yellow_tripdata_{year}-{month:02d}.csv.gz'
     
     engine = create_engine(f'postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}')
@@ -73,8 +71,22 @@ def run():
             if_exists='append'
         )
         
+@click.command(help='Download a NYC yellow taxi CSV for a given year/month and ingest it into a Postgres table.')
+@click.option('--pg-user', default='root', show_default=True, help='Postgres user')
+@click.option('--pg-password', '--pg-pass', default='root', show_default=True, help='Postgres password')
+@click.option('--pg-host', default='localhost', show_default=True, help='Postgres host')
+@click.option('--pg-port', default=5432, show_default=True, type=int, help='Postgres port')
+@click.option('--pg-database', '--pg-db', 'pg_database', default='ny_taxi', show_default=True, help='Postgres database')
+@click.option('--year', default=2021, show_default=True, type=int, help='Year of the data file')
+@click.option('--month', default=1, show_default=True, type=int, help='Month of the data file')
+@click.option('--chunksize', default=100000, show_default=True, type=int, help='CSV read chunksize')
+@click.option('--target-table', default='yellow_taxi_data', show_default=True, help='Target table name')
+def main(pg_user, pg_password, pg_host, pg_port, pg_database, year, month, chunksize, target_table):
+    run(pg_user, pg_password, pg_host, pg_port, pg_database, year, month, chunksize, target_table)
+
+
 if __name__ == '__main__':
-    run()
+    main()
 
 
 
